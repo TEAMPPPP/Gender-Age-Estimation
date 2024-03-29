@@ -1,0 +1,7 @@
+watchdog==4.0.0
+rich==13.7.1
+opencv-python==4.9.0.80
+matplotlib
+tqdm==4.66.2
+ultralytics==8.1.37
+timm==0.9.16
