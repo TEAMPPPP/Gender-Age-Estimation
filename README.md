@@ -1,7 +1,8 @@
 # Gender-Age Estimation
 <img src="https://github.com/TQS-korea/Gender_Age_Estimation/assets/81406444/c7b9ee12-f8e7-4eb6-9425-5b9a5167c287" width="300" height="300">
+<img src="https://github.com/TQS-korea/Gender_Age_Estimation/assets/81406444/436698df-4b37-403c-93e8-69b2e4b5ee48" width="300" height="300">
 
-This project aims to estimate gender and age from images using deep learning techniques.
+Gender-Age Estimation visualization
 
 ## Installation
 
