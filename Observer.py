@@ -33,7 +33,7 @@ class Handler(FileSystemEventHandler):
             console.print("[blue]****************************************************************************************************[/blue]", style="bold blue")
             console.print(f"[green]New image detected: {event.src_path}[/green]", style="bold green")
             subprocess.run(['python', './tools/demo.py', '--image_path', event.src_path], check=True)
-
+            console.print("[blue]****************************************************************************************************[/blue]", style="bold blue")
 if __name__ == "__main__":
     w = Watcher()
     w.run()

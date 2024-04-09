@@ -120,7 +120,7 @@ class GAENet(nn.Module):
 
     def forward(self, x):
         features = self.backbone(x)[-1]
-        features = features.permute(0, 3, 1, 2)  # Reshapes the tensor from [8, 7, 7, 1024] to [8, 1024, 7, 7]
+        features = features.permute(0, 3, 1, 2)
 
         features_reduced = self.intermediate_convs(features)
         msgfam_features = self.msgfam(features_reduced)
