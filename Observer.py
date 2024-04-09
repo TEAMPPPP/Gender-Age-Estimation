@@ -32,7 +32,7 @@ class Handler(FileSystemEventHandler):
         if not event.is_directory:
             console.print("[blue]****************************************************************************************************[/blue]", style="bold blue")
             console.print(f"[green]New image detected: {event.src_path}[/green]", style="bold green")
-            subprocess.run(['python', '/home/jhun/Age_gender_estimation/demo.py', '--image_path', event.src_path], check=True)
+            subprocess.run(['python', './tools/demo.py', '--image_path', event.src_path], check=True)
 
 if __name__ == "__main__":
     w = Watcher()
