@@ -1,8 +1,4 @@
 # Gender-Age Estimation
-<img src="https://github.com/TQS-korea/Gender_Age_Estimation/assets/81406444/c7b9ee12-f8e7-4eb6-9425-5b9a5167c287" width="300" height="300">
-<img src="https://github.com/TQS-korea/Gender_Age_Estimation/assets/81406444/436698df-4b37-403c-93e8-69b2e4b5ee48" width="300" height="300">
-
-Gender-Age Estimation visualization
 
 ## Installation
 
@@ -33,10 +29,21 @@ Create a pretrained folder and place the pths in it.
 ## Lets Start!!!
 To train, run train.py (However, please configure the settings according to the user's interface before proceeding.)
    ```bash
-   python train.py
+   python ./tools/train.py --base-path <your/datasets/dir> --save-path <dir/you/want/to/save>
+   ```
+
+To perform test demo processing, run demo.py
+
+   ```bash
+   python ./toos/demo.py --model_path_gaenet <saved/GAENet/Weights/dir> --model_path_yolo <yolo/weights/dir> ----image_path <test/image>
    ```
 
 To perform real-time demo processing, run Observer.py
+
+   ```bash
+   mkdir input
+   ```
+
    ```bash
    python Observer.py
    ```

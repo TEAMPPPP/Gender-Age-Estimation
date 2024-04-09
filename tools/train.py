@@ -19,7 +19,7 @@ def parse_args():
     parser.add_argument('--base-path', type=str, default='/home/jhun/Age_gender_estimation/data/UTKFace', help='Base path for the UTKFace dataset')
     parser.add_argument('--epochs', type=int, default=100, help='Number of epochs to train the model')
     parser.add_argument('--batch-size', type=int, default=8, help='Batch size for training')
-    parser.add_argument('--save-path', type=str, default='/home/jhun/Age_gender_estimation/pretrained', help='Path to save the trained models and checkpoints')
+    parser.add_argument('--save-path', type=str, default='./pretrained', help='Path to save the trained models and checkpoints')
     args = parser.parse_args()
     
     return args
