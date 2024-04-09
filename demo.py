@@ -11,83 +11,37 @@ import argparse
 from datetime import datetime
 import os
 import csv
+from model.GAENet import GAENet
 
 config = {
-    'model_path_age': '/home/jhun/Age_gender_estimation/pretrained/age_model20_best_split.pth',
-    'model_path_gender': '/home/jhun/Age_gender_estimation/pretrained/gender_model20_best_split.pth',
+    'model_path_gaenet': '/home/jhun/Age_gender_estimation/pretrained/best.pth.tar',
     'model_path_yolo': '/home/jhun/Age_gender_estimation/pretrained/yolov8m-face.pt'
 }
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Age and Gender Classification")
-    parser.add_argument('--model_path_age', type=str, default=config['model_path_age'], help='Path to the age model.')
-    parser.add_argument('--model_path_gender', type=str, default=config['model_path_gender'], help='Path to the gender model.')
+    parser.add_argument('--model_path_gaenet', type=str, default=config['model_path_gaenet'], help='model_path_gaenet.')
     parser.add_argument('--model_path_yolo', type=str, default=config['model_path_yolo'], help='Path to the YOLO model.')
     parser.add_argument('--image_path', type=str, help='Path to the input image.')
 
     return parser.parse_args()
 
-class AgeNeuralNetwork(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.backbone = torchvision.models.resnet50(weights = 'DEFAULT')
-        # self.backbone = torchvision.models.resnet50(pretrained=True)
-        
-        # Define 'necks' for each head
-        self.age = nn.Sequential(
-            nn.Linear(1000, 512),
-            nn.SiLU(),
-            nn.Linear(512, 256),
-            nn.SiLU(),
-            nn.Linear(256, 64),
-            nn.ReLU(),
-            nn.Linear(64, 20)
-            )
-
-    def forward(self, x):
-        x = self.backbone(x)
-        out_age = self.age(x)
-        return out_age
-
-# Define model in pytorch
-class GenderNeuralNetwork(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.backbone = torchvision.models.resnet50(weights = 'DEFAULT')
-        # self.backbone = torchvision.models.resnet50(pretrained=True)
-        
-        # Define 'necks' for each head
-        self.gender = nn.Sequential(
-            nn.Linear(1000, 512),
-            nn.SiLU(),
-            nn.Linear(512, 256),
-            nn.SiLU(),
-            nn.Linear(256, 64),
-            nn.ReLU(),
-            nn.Linear(64, 1),
-            nn.Sigmoid()
-            )
-
-    def forward(self, x):
-        x = self.backbone(x)
-        out_gender = self.gender(x)
-        return out_gender
-
-def classify_age_gender(age_model, gender_model, img, faces, device, csv_writer):
+def classify_age_gender(gaenet_model, img, faces, device, csv_writer):
     transform = transforms.Compose([
-        transforms.Resize(224),
+        transforms.Resize((224, 224)), 
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     for face in faces:
         x1, y1, x2, y2, conf = face
         
-        # face image crop!
+        # 얼굴 이미지 크롭 및 변환
         face_img = Image.fromarray(img[int(y1):int(y2), int(x1):int(x2)])
         face_img = transform(face_img).unsqueeze(0).to(device)
 
-        age_pred = age_model(face_img).argmax(1).item() 
-        gender_pred = gender_model(face_img).item()
+        age_pred, gender_pred = gaenet_model(face_img)
+        age_pred = age_pred.item()
+        gender_pred = gender_pred.item() 
 
         print(f"Age : {get_age(age_pred)}")
         print(f"Gender : {get_gender(gender_pred)}")
@@ -97,19 +51,28 @@ def classify_age_gender(age_model, gender_model, img, faces, device, csv_writer)
 
         csv_writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), gender_text, age_text])
 
-        text = f"Age: {age_text}, Gender: {gender_text}"    
+        text = f"{age_text}, {gender_text}"    
             
-        cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0), 2)
-        cv2.putText(img, text, (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (36,255,12), 2)
+        cv2.rectangle(img, (int(x1), int(y1)), (int(x2), int(y2)), (255, 0, 0), 6)
+        cv2.putText(img, text, (int(x1), int(y1)-10), cv2.FONT_HERSHEY_SIMPLEX, 1.5, (0, 255, 100), 6)
 
-def get_age(d):
-    if 0 <= d <= 19:
-        return f"{d*5} - {d*5+4}"
-    #if int(d) == 0:
-    #    return f"{int(d) + 3}"
-    #return f"{int(d)}"
-    return "Unknown"
 
+def get_age(predicted_age):
+    # predicted_age는 연령대의 인덱스를 나타냄 (0부터 시작)
+    # 0이면 0-4세, 1이면 5-9세, ..., 19면 95-99세를 나타냄
+    # 100세 이상은 모두 19번 인덱스로 처리됨
+    
+    # 예측된 인덱스를 실제 나이 구간으로 변환
+    predicted_age = round(predicted_age)
+    if 0 <= predicted_age < 20:
+        age_start = predicted_age * 5
+        age_end = age_start + 4
+        return f"{age_start}-{age_end}"
+    elif predicted_age == 19:  # 100세 이상 처리
+        return "95"
+    else:
+        return "0-4"
+    
 def get_gender(prob):
     if prob < 0.195:return "Male"
     else: return "Female"
@@ -153,13 +116,17 @@ def visualize_detection_cv2(model, img_path, device):
 
 def visualize_and_classify_faces(args, device):
     yolo_model = YOLO(args.model_path_yolo).to(device)
-    age_model = AgeNeuralNetwork().to(device)
-    age_model.load_state_dict(torch.load(args.model_path_age, map_location=device))
-    gender_model = GenderNeuralNetwork().to(device)
-    gender_model.load_state_dict(torch.load(args.model_path_gender, map_location=device))
+    
+    gaenet_model = GAENet().to(device)
+    checkpoint = torch.load(args.model_path_gaenet, map_location=device)
+    if "state_dict" in checkpoint:
+        gaenet_model.load_state_dict(checkpoint["state_dict"])
+    else:
+        gaenet_model.load_state_dict(checkpoint)
+
+    gaenet_model.eval() 
 
     faces = visualize_detection_cv2(yolo_model, args.image_path, device)
-
     original_img = cv2.imread(args.image_path)
     img_rgb = cv2.cvtColor(original_img, cv2.COLOR_BGR2RGB)
 
@@ -180,9 +147,10 @@ def visualize_and_classify_faces(args, device):
         if os.stat(csv_file_path).st_size == 0:
             csv_writer.writerow(["Date", "Gender", "Age", "Floor", "Place of use"])
         
-        classify_age_gender(age_model, gender_model, img_rgb, faces, device, csv_writer)
+        classify_age_gender(gaenet_model, img_rgb, faces, device, csv_writer)
     
     cv2.imwrite(output_image_path, cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR))
+
 
 def main():
     args = parse_arguments()
