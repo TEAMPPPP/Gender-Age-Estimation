@@ -81,6 +81,7 @@ cd app
 python3 main.py
 ```
 - example url: (http://192.168.219.193:8000/docs#/default/read_me_Read_Me__get)
+<img src="https://github.com/TQS-korea/Gender_Age_Estimation/assets/81406444/212f135d-f6bb-48c6-8ac2-cbc84f3ad0f2" width="800" height="600">
 
 ## TO-DO List
 - ResNet50 test training [O]
