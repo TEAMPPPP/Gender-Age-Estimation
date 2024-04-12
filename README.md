@@ -74,7 +74,7 @@ To perform real-time demo processing, run Observer.py
    ```bash
    python Observer.py
    ```
-## Lets Start (Docker & FastAPI)
+## Lets Start (FastAPI on Docker)
 
 ```bash
 cd app
