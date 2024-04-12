@@ -11,7 +11,6 @@ import argparse
 from datetime import datetime
 import os
 import csv
-from model.GAENet import GAENet
 import sys
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -20,17 +19,15 @@ sys.path.append(base_dir)
 
 from model.GAENet import GAENet
 
-config = {
-    'model_path_gaenet': '/home/jhun/Age_gender_estimation/pretrained/best.pth.tar',
-    'model_path_yolo': '/home/jhun/Age_gender_estimation/pretrained/yolov8m-face.pt'
-}
-
+import warnings
+warnings.filterwarnings("ignore")
+                                                             
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Age and Gender Classification")
-    parser.add_argument('--model_path_gaenet', type=str, default=config['model_path_gaenet'], help='model_path_gaenet.')
-    parser.add_argument('--model_path_yolo', type=str, default=config['model_path_yolo'], help='Path to the YOLO model.')
-    parser.add_argument('--image_path', type=str, help='Path to the input image.')
-
+    parser.add_argument('--model_path_gaenet', type=str, default='/data/best.pth.tar', help='Path to GAENet model.')
+    parser.add_argument('--model_path_yolo', type=str, default='/data/yolov8m-face.pt', help='Path to the YOLO model.')
+    parser.add_argument('--image_path', type=str, required=True, help='Path to the input image.')
+    parser.add_argument('--output_directory', type=str, default='./output', help='Directory to save outputs.')
     return parser.parse_args()
 
 def classify_age_gender(gaenet_model, img, faces, device, csv_writer):
@@ -120,25 +117,25 @@ def visualize_detection_cv2(model, img_path, device):
             detected_faces.append((x1, y1, x2, y2, conf))
 
     return detected_faces 
-
-def visualize_and_classify_faces(args, device):
-    yolo_model = YOLO(args.model_path_yolo).to(device)
-    
+   
+def main(model_path_gaenet, model_path_yolo, image_path, output_directory):
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print(f"Using device: {device}")
+    yolo_model = YOLO(model_path_yolo).to(device)
     gaenet_model = GAENet().to(device)
-    checkpoint = torch.load(args.model_path_gaenet, map_location=device)
+    checkpoint = torch.load(model_path_gaenet, map_location=device)
     if "state_dict" in checkpoint:
         gaenet_model.load_state_dict(checkpoint["state_dict"])
     else:
         gaenet_model.load_state_dict(checkpoint)
+    gaenet_model.eval()
 
-    gaenet_model.eval() 
-
-    faces = visualize_detection_cv2(yolo_model, args.image_path, device)
-    original_img = cv2.imread(args.image_path)
+    faces = visualize_detection_cv2(yolo_model, image_path, device)
+    original_img = cv2.imread(image_path)
     img_rgb = cv2.cvtColor(original_img, cv2.COLOR_BGR2RGB)
 
     date_folder = datetime.now().strftime("%Y%m%d")
-    output_base_dir = os.path.join(os.getcwd(), 'outputs')
+    output_base_dir = os.path.join(os.getcwd(), output_directory)
     output_dir = os.path.join(output_base_dir, date_folder)
     
     if not os.path.exists(output_dir):
@@ -158,12 +155,11 @@ def visualize_and_classify_faces(args, device):
     
     cv2.imwrite(output_image_path, cv2.cvtColor(img_rgb, cv2.COLOR_RGB2BGR))
 
+    return output_image_path, csv_file_path
 
-def main():
-    args = parse_arguments()
-    
-    device = "cpu"
-    visualize_and_classify_faces(args, device)
-    
+        
 if __name__ == "__main__":
-    main()
+    args = parse_arguments()
+    main(args.model_path_gaenet, args.model_path_yolo, args.image_path, args.output_directory)
+
+
