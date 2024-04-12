@@ -14,7 +14,7 @@ sys.path.append(base_dir)
 
 from tools.fastapi_demo import main
 
-app = FastAPI()
+app = FastAPI(title="TQS_Korea")
 
 @app.get("/Read-Me/", response_class=HTMLResponse)
 def read_me():
