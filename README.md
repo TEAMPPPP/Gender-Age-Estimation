@@ -81,7 +81,7 @@ cd app
 python3 main.py
 ```
 - example url: (http://192.168.219.193:8000/docs#/default/read_me_Read_Me__get)
-- 
+
 ## TO-DO List
 - ResNet50 test training [O]
 - SwinTransformer v2 training [O]
